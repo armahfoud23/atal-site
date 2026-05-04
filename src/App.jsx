@@ -6,6 +6,16 @@ function App() {
     window.location.pathname.includes("admin") ||
     window.location.search.includes("admin=1")
 
+  const categories = [
+    "Culture",
+    "Sport",
+    "Éducation",
+    "Digital",
+    "Solidarité",
+    "Mobilité",
+    "Autre",
+  ]
+
   const [session, setSession] = useState(null)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -16,6 +26,7 @@ function App() {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [date, setDate] = useState("")
+  const [category, setCategory] = useState("Culture")
   const [imageFile, setImageFile] = useState(null)
   const [editingEvent, setEditingEvent] = useState(null)
 
@@ -23,6 +34,7 @@ function App() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
   const [filter, setFilter] = useState("all")
+  const [categoryFilter, setCategoryFilter] = useState("all")
 
   useEffect(() => {
     fetchEvents()
@@ -41,6 +53,27 @@ function App() {
       authListener.subscription.unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+    const elements = document.querySelectorAll(".reveal")
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible")
+          }
+        })
+      },
+      { threshold: 0.15 }
+    )
+
+    elements.forEach((element) => observer.observe(element))
+
+    return () => {
+      elements.forEach((element) => observer.unobserve(element))
+    }
+  }, [filteredEvents.length])
 
   async function fetchEvents() {
     setLoading(true)
@@ -102,10 +135,17 @@ function App() {
   }, [events])
 
   const filteredEvents = useMemo(() => {
-    if (filter === "all") return events
-    if (filter === "past") return pastEvents
-    return upcomingEvents
-  }, [filter, events, pastEvents, upcomingEvents])
+    let list = events
+
+    if (filter === "past") list = pastEvents
+    if (filter === "upcoming") list = upcomingEvents
+
+    if (categoryFilter !== "all") {
+      list = list.filter((event) => event.category === categoryFilter)
+    }
+
+    return list
+  }, [filter, categoryFilter, events, pastEvents, upcomingEvents])
 
   async function signIn(e) {
     e.preventDefault()
@@ -132,6 +172,7 @@ function App() {
     setTitle("")
     setDescription("")
     setDate("")
+    setCategory("Culture")
     setImageFile(null)
     setEditingEvent(null)
 
@@ -144,6 +185,7 @@ function App() {
     setTitle(event.title || "")
     setDescription(event.description || "")
     setDate(event.date || "")
+    setCategory(event.category || "Culture")
     setImageFile(null)
 
     window.scrollTo({
@@ -180,7 +222,7 @@ function App() {
   async function saveEvent(e) {
     e.preventDefault()
 
-    if (!title || !description || !date) {
+    if (!title || !description || !date || !category) {
       showMessage("Merci de remplir tous les champs")
       return
     }
@@ -195,6 +237,7 @@ function App() {
           title,
           description,
           date,
+          category,
         }
 
         if (uploadedImageUrl) {
@@ -219,6 +262,7 @@ function App() {
             title,
             description,
             date,
+            category,
             image_url: uploadedImageUrl,
           },
         ])
@@ -256,6 +300,49 @@ function App() {
     fetchEvents()
   }
 
+  function FilterBox() {
+    return (
+      <div className="filters-row">
+        <div className="filter-tabs">
+          <button
+            className={filter === "all" ? "active" : ""}
+            onClick={() => setFilter("all")}
+          >
+            Tous
+          </button>
+
+          <button
+            className={filter === "upcoming" ? "active" : ""}
+            onClick={() => setFilter("upcoming")}
+          >
+            À venir
+          </button>
+
+          <button
+            className={filter === "past" ? "active" : ""}
+            onClick={() => setFilter("past")}
+          >
+            Passés
+          </button>
+        </div>
+
+        <select
+          className="category-filter"
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+        >
+          <option value="all">Toutes les catégories</option>
+
+          {categories.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      </div>
+    )
+  }
+
   function EventsList({ data, admin = false }) {
     if (loading) {
       return <p className="empty-message">Chargement des événements...</p>
@@ -267,9 +354,10 @@ function App() {
 
     return (
       <div className="events-grid">
-        {data.map((event) => (
+        {data.map((event, index) => (
           <div
-            className={`event-card ${admin ? "" : "clickable"}`}
+            className={`event-card reveal-card ${admin ? "" : "clickable"}`}
+            style={{ animationDelay: `${index * 70}ms` }}
             key={event.id}
             onClick={() => !admin && setSelectedEvent(event)}
           >
@@ -286,7 +374,13 @@ function App() {
             </div>
 
             <div className="event-content">
-              <span className="event-date">{formatDate(event.date)}</span>
+              <div className="event-meta">
+                <span className="event-date">{formatDate(event.date)}</span>
+                <span className="event-category">
+                  {event.category || "Autre"}
+                </span>
+              </div>
+
               <h3>{event.title}</h3>
               <p>{shortText(event.description, 130)}</p>
 
@@ -364,6 +458,7 @@ function App() {
               <p className="eyebrow">
                 {editingEvent ? "Modification" : "Nouvel événement"}
               </p>
+
               <h2>
                 {editingEvent ? "Modifier l’événement" : "Ajouter un événement"}
               </h2>
@@ -389,16 +484,27 @@ function App() {
               onChange={(e) => setDate(e.target.value)}
             />
 
-            <textarea
-              placeholder="Description complète"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              {categories.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
 
             <input
               type="file"
               accept="image/*"
               onChange={(e) => setImageFile(e.target.files[0])}
+            />
+
+            <textarea
+              placeholder="Description complète"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
 
             <button type="submit" disabled={saving}>
@@ -413,27 +519,7 @@ function App() {
 
         <div className="admin-list-header">
           <h2 className="admin-section-title">Événements ajoutés</h2>
-
-          <div className="filter-tabs">
-            <button
-              className={filter === "all" ? "active" : ""}
-              onClick={() => setFilter("all")}
-            >
-              Tous
-            </button>
-            <button
-              className={filter === "upcoming" ? "active" : ""}
-              onClick={() => setFilter("upcoming")}
-            >
-              À venir
-            </button>
-            <button
-              className={filter === "past" ? "active" : ""}
-              onClick={() => setFilter("past")}
-            >
-              Passés
-            </button>
-          </div>
+          <FilterBox />
         </div>
 
         <EventsList data={filteredEvents} admin />
@@ -470,7 +556,7 @@ function App() {
         </div>
       </header>
 
-      <section className="hero" id="accueil">
+      <section className="hero reveal" id="accueil">
         <div className="hero-content">
           <p className="eyebrow">ASSOCIATION TRAIN OF FUTURE LARACHE</p>
 
@@ -517,7 +603,7 @@ function App() {
         </div>
       </section>
 
-      <section className="action-zone" id="activites">
+      <section className="action-zone reveal" id="activites">
         <div className="action-left">
           <p className="eyebrow">Nos activités</p>
           <h2>
@@ -558,41 +644,22 @@ function App() {
         </div>
       </section>
 
-      <section className="section" id="evenements">
+      <section className="section reveal" id="evenements">
         <div className="section-header">
           <div>
             <p className="eyebrow">Programme</p>
             <h2>
-              Événements <span>à venir</span>
+              Tous les <span>événements</span>
             </h2>
           </div>
 
-          <div className="filter-tabs">
-            <button
-              className={filter === "upcoming" ? "active" : ""}
-              onClick={() => setFilter("upcoming")}
-            >
-              À venir
-            </button>
-            <button
-              className={filter === "past" ? "active" : ""}
-              onClick={() => setFilter("past")}
-            >
-              Passés
-            </button>
-            <button
-              className={filter === "all" ? "active" : ""}
-              onClick={() => setFilter("all")}
-            >
-              Tous
-            </button>
-          </div>
+          <FilterBox />
         </div>
 
         <EventsList data={filteredEvents} />
       </section>
 
-      <section className="contact" id="contact">
+      <section className="contact reveal" id="contact">
         <p className="eyebrow">Contact</p>
         <h2>Rejoignez le mouvement</h2>
         <p>Email : atalarache@gmail.com</p>
@@ -622,6 +689,9 @@ function App() {
 
             <div className="modal-content">
               <span className="modal-date">{formatDate(selectedEvent.date)}</span>
+              <span className="modal-category">
+                {selectedEvent.category || "Autre"}
+              </span>
               <h2>{selectedEvent.title}</h2>
               <p>{selectedEvent.description}</p>
             </div>

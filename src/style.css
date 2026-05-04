@@ -29,7 +29,8 @@ body {
 button,
 a,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -97,6 +98,12 @@ button {
   color: var(--green);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .join-btn,
 .primary-btn {
   background: var(--green);
@@ -116,6 +123,22 @@ button {
 .primary-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 20px 45px rgba(122, 193, 66, 0.35);
+}
+
+.admin-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 900;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 12px 18px;
+  border-radius: 999px;
+  transition: 0.25s ease;
+  white-space: nowrap;
+}
+
+.admin-link:hover {
+  color: #111;
+  background: white;
 }
 
 .secondary-btn {
@@ -343,6 +366,13 @@ button {
   font-size: 38px;
 }
 
+.filters-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .filter-tabs {
   display: flex;
   gap: 10px;
@@ -364,6 +394,17 @@ button {
   background: #111;
   color: white;
   border-color: #111;
+}
+
+.category-filter {
+  background: white;
+  color: #111;
+  border: 1px solid var(--border);
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-weight: 900;
+  min-width: 220px;
+  outline: none;
 }
 
 .events-grid {
@@ -444,17 +485,40 @@ button {
   flex: 1;
 }
 
+.event-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
 .event-date,
-.modal-date {
+.modal-date,
+.event-category,
+.modal-category {
   display: inline-block;
-  background: var(--green);
-  color: #111;
   padding: 9px 16px;
   border-radius: 999px;
   font-size: 14px;
   font-weight: 900;
-  margin-bottom: 16px;
   width: fit-content;
+}
+
+.event-date,
+.modal-date {
+  background: var(--green);
+  color: #111;
+}
+
+.event-category,
+.modal-category {
+  background: #111;
+  color: white;
+}
+
+.modal-category {
+  margin-left: 8px;
 }
 
 .event-content h3 {
@@ -517,6 +581,44 @@ button {
 .contact p {
   margin-top: 8px;
   font-weight: 700;
+}
+
+/* ANIMATIONS */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-card {
+  animation: cardEnter 0.55s ease both;
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.card,
+.event-card,
+.primary-btn,
+.secondary-btn,
+.join-btn,
+.admin-link {
+  will-change: transform;
 }
 
 /* MODAL */
@@ -644,7 +746,8 @@ button {
 
 .login-box input,
 .event-form input,
-.event-form textarea {
+.event-form textarea,
+.event-form select {
   width: 100%;
   padding: 15px 16px;
   border-radius: 16px;
@@ -661,7 +764,8 @@ button {
 
 .login-box input:focus,
 .event-form input:focus,
-.event-form textarea:focus {
+.event-form textarea:focus,
+.event-form select:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 4px rgba(122, 193, 66, 0.12);
 }
@@ -764,6 +868,11 @@ button {
   color: #d6d6d6;
 }
 
+.admin-page .event-category {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
 .admin-actions {
   display: flex;
   gap: 12px;
@@ -790,7 +899,7 @@ button {
   font-weight: 800;
 }
 
-/* TABLET */
+/* TABLETTE */
 
 @media (max-width: 1100px) {
   .hero,
@@ -816,174 +925,6 @@ button {
     height: 320px;
   }
 }
-
-/* MOBILE */
-
-@media (max-width: 768px) {
-  .site-header {
-    position: static;
-    flex-direction: column;
-    gap: 16px;
-    padding: 18px;
-  }
-
-  .site-header nav {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 14px;
-  }
-
-  .join-btn {
-    width: 100%;
-  }
-
-  .hero {
-    padding: 50px 6%;
-    min-height: auto;
-  }
-
-  .hero h1 {
-    font-size: 42px;
-    letter-spacing: -1.5px;
-  }
-
-  .hero p {
-    font-size: 16px;
-  }
-
-  .hero-buttons {
-    flex-direction: column;
-  }
-
-  .stats {
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  .action-zone {
-    margin: 0 5%;
-    border-radius: 26px;
-  }
-
-  .action-left {
-    padding: 28px;
-  }
-
-  .cards,
-  .event-form {
-    grid-template-columns: 1fr;
-  }
-
-  .event-form textarea {
-    grid-column: span 1;
-  }
-
-  .section {
-    padding: 58px 5%;
-  }
-
-  .section-header,
-  .admin-list-header,
-  .admin-header,
-  .admin-card-title {
-    flex-direction: column;
-    align-items: start;
-  }
-
-  .section h2,
-  .admin-section-title,
-  .contact h2 {
-    font-size: 31px;
-  }
-
-  .events-grid {
-    grid-template-columns: 1fr;
-    gap: 26px;
-  }
-
-  .event-card {
-    min-height: auto;
-    border-radius: 26px;
-  }
-
-  .event-image-wrap {
-    height: 240px;
-  }
-
-  .event-content {
-    padding: 23px;
-  }
-
-  .event-content h3 {
-    font-size: 23px;
-  }
-
-  .modal-overlay {
-    padding: 14px;
-  }
-
-  .modal-box {
-    width: 100%;
-    border-radius: 24px;
-  }
-
-  .modal-img {
-    height: 250px;
-  }
-
-  .modal-content {
-    padding: 25px;
-  }
-
-  .modal-content h2 {
-    font-size: 30px;
-  }
-
-  .modal-content p {
-    font-size: 16px;
-  }
-
-  .contact {
-    margin: 20px 5% 50px;
-    padding: 34px 22px;
-  }
-
-  .admin-page {
-    padding: 28px 5% 60px;
-  }
-
-  .toast {
-    top: 14px;
-    right: 14px;
-    left: 14px;
-  }
-}
-
-/* HEADER ACTIONS + BOUTON ADMIN */
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.admin-link {
-  color: white;
-  text-decoration: none;
-  font-weight: 900;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  padding: 12px 18px;
-  border-radius: 999px;
-  transition: 0.25s ease;
-  white-space: nowrap;
-}
-
-.admin-link:hover {
-  color: #111;
-  background: white;
-}
-
-/* AMÃ‰LIORATION TABLETTE / TÃ‰LÃ‰PHONE */
 
 @media (max-width: 900px) {
   .site-header {
@@ -1064,6 +1005,13 @@ button {
 
   .section-header,
   .admin-list-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters-row {
+    width: 100%;
+    flex-direction: column;
     align-items: stretch;
   }
 
@@ -1074,7 +1022,13 @@ button {
   .filter-tabs button {
     flex: 1;
   }
+
+  .category-filter {
+    width: 100%;
+  }
 }
+
+/* TÃ‰LÃ‰PHONE */
 
 @media (max-width: 520px) {
   .brand {
@@ -1133,16 +1087,49 @@ button {
     font-size: 26px;
   }
 
+  .cards,
+  .event-form {
+    grid-template-columns: 1fr;
+  }
+
   .card {
     padding: 22px 16px;
+  }
+
+  .section {
+    padding: 58px 5%;
+  }
+
+  .section h2,
+  .admin-section-title,
+  .contact h2 {
+    font-size: 31px;
+  }
+
+  .events-grid {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+
+  .event-card {
+    min-height: auto;
+    border-radius: 26px;
   }
 
   .event-image-wrap {
     height: 220px;
   }
 
+  .event-content {
+    padding: 23px;
+  }
+
   .event-content h3 {
     font-size: 21px;
+  }
+
+  .event-form textarea {
+    grid-column: span 1;
   }
 
   .filter-tabs {
@@ -1154,6 +1141,17 @@ button {
     width: 100%;
   }
 
+  .event-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .event-date,
+  .event-category {
+    width: 100%;
+    text-align: center;
+  }
+
   .admin-actions {
     display: grid;
     grid-template-columns: 1fr;
@@ -1163,7 +1161,57 @@ button {
     width: 100%;
   }
 
+  .modal-overlay {
+    padding: 14px;
+  }
+
+  .modal-box {
+    width: 100%;
+    border-radius: 24px;
+  }
+
+  .modal-img {
+    height: 250px;
+  }
+
+  .modal-content {
+    padding: 25px;
+  }
+
   .modal-content h2 {
     font-size: 27px;
+  }
+
+  .modal-content p {
+    font-size: 16px;
+  }
+
+  .modal-date,
+  .modal-category {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin: 0 0 8px;
+  }
+
+  .contact {
+    margin: 20px 5% 50px;
+    padding: 34px 22px;
+  }
+
+  .admin-page {
+    padding: 28px 5% 60px;
+  }
+
+  .admin-header,
+  .admin-card-title {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .toast {
+    top: 14px;
+    right: 14px;
+    left: 14px;
   }
 }
