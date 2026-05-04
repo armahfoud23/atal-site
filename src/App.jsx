@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { supabase } from "./supabaseClient"
 
 function App() {
@@ -17,6 +17,12 @@ function App() {
   const [description, setDescription] = useState("")
   const [date, setDate] = useState("")
   const [imageFile, setImageFile] = useState(null)
+  const [editingEvent, setEditingEvent] = useState(null)
+
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState("")
+  const [filter, setFilter] = useState("upcoming")
 
   useEffect(() => {
     fetchEvents()
@@ -25,29 +31,81 @@ function App() {
       setSession(data.session)
     })
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session)
+      }
+    )
+
+    return () => {
+      authListener.subscription.unsubscribe()
+    }
   }, [])
 
   async function fetchEvents() {
+    setLoading(true)
+
     const { data, error } = await supabase
       .from("events")
       .select("*")
       .order("date", { ascending: true })
 
     if (error) {
-      alert(error.message)
+      showMessage(error.message)
+      setLoading(false)
       return
     }
 
     setEvents(data || [])
+    setLoading(false)
   }
 
-  function shortText(text, max = 110) {
+  function showMessage(text) {
+    setMessage(text)
+
+    setTimeout(() => {
+      setMessage("")
+    }, 3500)
+  }
+
+  function shortText(text, max = 120) {
     if (!text) return ""
     return text.length > max ? text.substring(0, max) + "..." : text
   }
+
+  function formatDate(value) {
+    if (!value) return ""
+
+    return new Date(value).toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
+  }
+
+  function isPastEvent(eventDate) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const eventDay = new Date(eventDate)
+    eventDay.setHours(0, 0, 0, 0)
+
+    return eventDay < today
+  }
+
+  const upcomingEvents = useMemo(() => {
+    return events.filter((event) => !isPastEvent(event.date))
+  }, [events])
+
+  const pastEvents = useMemo(() => {
+    return events.filter((event) => isPastEvent(event.date)).reverse()
+  }, [events])
+
+  const filteredEvents = useMemo(() => {
+    if (filter === "all") return events
+    if (filter === "past") return pastEvents
+    return upcomingEvents
+  }, [filter, events, pastEvents, upcomingEvents])
 
   async function signIn(e) {
     e.preventDefault()
@@ -57,66 +115,130 @@ function App() {
       password,
     })
 
-    if (error) alert(error.message)
+    if (error) {
+      showMessage(error.message)
+      return
+    }
+
+    showMessage("Connexion réussie")
   }
 
   async function signOut() {
     await supabase.auth.signOut()
+    showMessage("Déconnexion réussie")
+  }
+
+  function resetForm() {
+    setTitle("")
+    setDescription("")
+    setDate("")
+    setImageFile(null)
+    setEditingEvent(null)
+
+    const fileInput = document.querySelector(".event-form input[type='file']")
+    if (fileInput) fileInput.value = ""
+  }
+
+  function startEdit(event) {
+    setEditingEvent(event)
+    setTitle(event.title || "")
+    setDescription(event.description || "")
+    setDate(event.date || "")
+    setImageFile(null)
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    })
+  }
+
+  async function uploadImage() {
+    if (!imageFile) return null
+
+    const cleanName = imageFile.name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "_")
+
+    const fileName = `${Date.now()}-${cleanName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from("event-images")
+      .upload(fileName, imageFile)
+
+    if (uploadError) {
+      throw new Error(uploadError.message)
+    }
+
+    const { data } = supabase.storage
+      .from("event-images")
+      .getPublicUrl(fileName)
+
+    return data.publicUrl
   }
 
   async function saveEvent(e) {
     e.preventDefault()
 
     if (!title || !description || !date) {
-      alert("Merci de remplir tous les champs")
+      showMessage("Merci de remplir tous les champs")
       return
     }
 
-    let imageUrl = null
+    setSaving(true)
 
-    if (imageFile) {
-      const cleanName = imageFile.name
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9._-]/g, "_")
+    try {
+      const uploadedImageUrl = await uploadImage()
 
-      const fileName = `${Date.now()}-${cleanName}`
+      if (editingEvent) {
+        const updatePayload = {
+          title,
+          description,
+          date,
+        }
 
-      const { error: uploadError } = await supabase.storage
-        .from("event-images")
-        .upload(fileName, imageFile)
+        if (uploadedImageUrl) {
+          updatePayload.image_url = uploadedImageUrl
+        }
 
-      if (uploadError) {
-        alert(uploadError.message)
-        return
+        const { error } = await supabase
+          .from("events")
+          .update(updatePayload)
+          .eq("id", editingEvent.id)
+
+        if (error) {
+          showMessage(error.message)
+          setSaving(false)
+          return
+        }
+
+        showMessage("Événement modifié avec succès")
+      } else {
+        const { error } = await supabase.from("events").insert([
+          {
+            title,
+            description,
+            date,
+            image_url: uploadedImageUrl,
+          },
+        ])
+
+        if (error) {
+          showMessage(error.message)
+          setSaving(false)
+          return
+        }
+
+        showMessage("Événement ajouté avec succès")
       }
 
-      const { data } = supabase.storage
-        .from("event-images")
-        .getPublicUrl(fileName)
-
-      imageUrl = data.publicUrl
+      resetForm()
+      fetchEvents()
+    } catch (error) {
+      showMessage(error.message)
     }
 
-    const { error } = await supabase.from("events").insert([
-      {
-        title,
-        description,
-        date,
-        image_url: imageUrl,
-      },
-    ])
-
-    if (error) {
-      alert(error.message)
-      return
-    }
-
-    setTitle("")
-    setDescription("")
-    setDate("")
-    setImageFile(null)
-    fetchEvents()
+    setSaving(false)
   }
 
   async function deleteEvent(id) {
@@ -126,30 +248,94 @@ function App() {
     const { error } = await supabase.from("events").delete().eq("id", id)
 
     if (error) {
-      alert(error.message)
+      showMessage(error.message)
       return
     }
 
+    showMessage("Événement supprimé")
     fetchEvents()
+  }
+
+  function EventsList({ data, admin = false }) {
+    if (loading) {
+      return <p className="empty-message">Chargement des événements...</p>
+    }
+
+    if (data.length === 0) {
+      return <p className="empty-message">Aucun événement pour le moment.</p>
+    }
+
+    return (
+      <div className="events-grid">
+        {data.map((event) => (
+          <div
+            className={`event-card ${admin ? "" : "clickable"}`}
+            key={event.id}
+            onClick={() => !admin && setSelectedEvent(event)}
+          >
+            <div className="event-image-wrap">
+              {event.image_url ? (
+                <img src={event.image_url} alt={event.title} loading="lazy" />
+              ) : (
+                <div className="event-placeholder">ATAL</div>
+              )}
+
+              {isPastEvent(event.date) && (
+                <span className="event-status">Passé</span>
+              )}
+            </div>
+
+            <div className="event-content">
+              <span className="event-date">{formatDate(event.date)}</span>
+              <h3>{event.title}</h3>
+              <p>{shortText(event.description, 130)}</p>
+
+              {admin ? (
+                <div className="admin-actions">
+                  <button type="button" onClick={() => startEdit(event)}>
+                    Modifier
+                  </button>
+
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    onClick={() => deleteEvent(event.id)}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              ) : (
+                <span className="read-more">Voir les détails →</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   if (isAdminPage) {
     if (!session) {
       return (
         <div className="login-page">
+          {message && <div className="toast">{message}</div>}
+
           <form className="login-box" onSubmit={signIn}>
             <img src="/logo.png" alt="ATAL" />
+            <p className="eyebrow">Administration</p>
             <h2>Connexion Bureau ATAL</h2>
 
             <input
               type="email"
               placeholder="Email"
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
 
             <input
               type="password"
               placeholder="Mot de passe"
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
 
@@ -161,19 +347,46 @@ function App() {
 
     return (
       <div className="admin-page">
+        {message && <div className="toast">{message}</div>}
+
         <div className="admin-header">
-          <h1>Bureau ATAL</h1>
+          <div>
+            <p className="eyebrow">Bureau ATAL</p>
+            <h1>Gestion des événements</h1>
+          </div>
+
           <button onClick={signOut}>Se déconnecter</button>
         </div>
 
         <div className="admin-card">
-          <h2>Ajouter un événement</h2>
+          <div className="admin-card-title">
+            <div>
+              <p className="eyebrow">
+                {editingEvent ? "Modification" : "Nouvel événement"}
+              </p>
+              <h2>
+                {editingEvent ? "Modifier l’événement" : "Ajouter un événement"}
+              </h2>
+            </div>
+
+            {editingEvent && (
+              <button type="button" className="cancel-btn" onClick={resetForm}>
+                Annuler
+              </button>
+            )}
+          </div>
 
           <form className="event-form" onSubmit={saveEvent}>
             <input
               placeholder="Titre"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+            />
+
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
             />
 
             <textarea
@@ -183,45 +396,47 @@ function App() {
             />
 
             <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-
-            <input
               type="file"
               accept="image/*"
               onChange={(e) => setImageFile(e.target.files[0])}
             />
 
-            <button type="submit">Ajouter</button>
+            <button type="submit" disabled={saving}>
+              {saving
+                ? "Enregistrement..."
+                : editingEvent
+                  ? "Sauvegarder"
+                  : "Ajouter"}
+            </button>
           </form>
         </div>
 
-        <h2 className="admin-section-title">Événements ajoutés</h2>
+        <div className="admin-list-header">
+          <h2 className="admin-section-title">Événements ajoutés</h2>
 
-        <div className="events-grid">
-          {events.map((event) => (
-            <div className="event-card" key={event.id}>
-              {event.image_url && (
-                <img src={event.image_url} alt={event.title} />
-              )}
-
-              <div className="event-content">
-                <h3>{event.title}</h3>
-                <p>{shortText(event.description)}</p>
-                <strong>{event.date}</strong>
-
-                <button
-                  className="delete-btn"
-                  onClick={() => deleteEvent(event.id)}
-                >
-                  Supprimer
-                </button>
-              </div>
-            </div>
-          ))}
+          <div className="filter-tabs">
+            <button
+              className={filter === "all" ? "active" : ""}
+              onClick={() => setFilter("all")}
+            >
+              Tous
+            </button>
+            <button
+              className={filter === "upcoming" ? "active" : ""}
+              onClick={() => setFilter("upcoming")}
+            >
+              À venir
+            </button>
+            <button
+              className={filter === "past" ? "active" : ""}
+              onClick={() => setFilter("past")}
+            >
+              Passés
+            </button>
+          </div>
         </div>
+
+        <EventsList data={filteredEvents} admin />
       </div>
     )
   }
@@ -244,7 +459,9 @@ function App() {
           <a href="#contact">Contact</a>
         </nav>
 
-        <a className="join-btn" href="#contact">Rejoignez-nous</a>
+        <a className="join-btn" href="#contact">
+          Rejoignez-nous
+        </a>
       </header>
 
       <section className="hero" id="accueil">
@@ -296,6 +513,7 @@ function App() {
 
       <section className="action-zone" id="activites">
         <div className="action-left">
+          <p className="eyebrow">Nos activités</p>
           <h2>
             Nos <span>domaines d’action</span>
           </h2>
@@ -335,37 +553,41 @@ function App() {
       </section>
 
       <section className="section" id="evenements">
-        <h2>
-          Événements <span>à venir</span>
-        </h2>
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Programme</p>
+            <h2>
+              Événements <span>à venir</span>
+            </h2>
+          </div>
 
-        <div className="events-grid">
-          {events.length === 0 ? (
-            <p>Aucun événement pour le moment.</p>
-          ) : (
-            events.map((event) => (
-              <div
-                className="event-card clickable"
-                key={event.id}
-                onClick={() => setSelectedEvent(event)}
-              >
-                {event.image_url && (
-                  <img src={event.image_url} alt={event.title} />
-                )}
-
-                <div className="event-content">
-  <span className="event-date">{event.date}</span>
-  <h3>{event.title}</h3>
-  <p>{shortText(event.description, 120)}</p>
-  <span className="read-more">Voir les détails →</span>
-</div>
-              </div>
-            ))
-          )}
+          <div className="filter-tabs">
+            <button
+              className={filter === "upcoming" ? "active" : ""}
+              onClick={() => setFilter("upcoming")}
+            >
+              À venir
+            </button>
+            <button
+              className={filter === "past" ? "active" : ""}
+              onClick={() => setFilter("past")}
+            >
+              Passés
+            </button>
+            <button
+              className={filter === "all" ? "active" : ""}
+              onClick={() => setFilter("all")}
+            >
+              Tous
+            </button>
+          </div>
         </div>
+
+        <EventsList data={filteredEvents} />
       </section>
 
       <section className="contact" id="contact">
+        <p className="eyebrow">Contact</p>
         <h2>Rejoignez le mouvement</h2>
         <p>Email : atalarache@gmail.com</p>
         <p>Téléphone : +212701079340</p>
@@ -375,20 +597,25 @@ function App() {
       {selectedEvent && (
         <div className="modal-overlay" onClick={() => setSelectedEvent(null)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setSelectedEvent(null)}>
+            <button
+              className="modal-close"
+              onClick={() => setSelectedEvent(null)}
+            >
               ×
             </button>
 
-            {selectedEvent.image_url && (
+            {selectedEvent.image_url ? (
               <img
                 className="modal-img"
                 src={selectedEvent.image_url}
                 alt={selectedEvent.title}
               />
+            ) : (
+              <div className="modal-img modal-placeholder">ATAL</div>
             )}
 
             <div className="modal-content">
-              <span className="modal-date">{selectedEvent.date}</span>
+              <span className="modal-date">{formatDate(selectedEvent.date)}</span>
               <h2>{selectedEvent.title}</h2>
               <p>{selectedEvent.description}</p>
             </div>
