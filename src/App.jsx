@@ -459,9 +459,15 @@ function App() {
           <a href="#contact">Contact</a>
         </nav>
 
-        <a className="join-btn" href="#contact">
-          Rejoignez-nous
-        </a>
+        <div className="header-actions">
+          <a className="join-btn" href="#contact">
+            Rejoignez-nous
+          </a>
+
+          <a className="admin-link" href="/admin" title="Administration">
+            Admin
+          </a>
+        </div>
       </header>
 
       <section className="hero" id="accueil">
