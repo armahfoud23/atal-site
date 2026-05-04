@@ -537,3 +537,180 @@ body {
   font-size: 17px;
   white-space: pre-line;
 }
+/* AMÉLIORATION ÉVÉNEMENTS */
+
+.events-grid {
+  align-items: stretch;
+}
+
+.event-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 430px;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.event-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.16);
+}
+
+.event-card img {
+  height: 240px;
+  width: 100%;
+  object-fit: cover;
+}
+
+.event-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.event-date {
+  color: var(--green);
+  font-weight: 900;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+.event-content h3 {
+  font-size: 22px;
+  line-height: 1.25;
+  margin-bottom: 12px;
+}
+
+.event-content p {
+  color: #555;
+  line-height: 1.7;
+  font-size: 15.5px;
+  flex: 1;
+}
+
+.read-more {
+  margin-top: 18px;
+  color: var(--green);
+  font-weight: 900;
+}
+
+/* POPUP ÉVÉNEMENT */
+
+.modal-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: min(1050px, 95%);
+  max-height: 88vh;
+}
+
+.modal-img {
+  height: 100%;
+  min-height: 520px;
+  object-fit: cover;
+}
+
+.modal-content {
+  padding: 45px;
+}
+
+.modal-content h2 {
+  font-size: 38px;
+  line-height: 1.15;
+}
+
+.modal-content p {
+  font-size: 18px;
+  line-height: 1.9;
+}
+
+/* MOBILE */
+
+@media (max-width: 768px) {
+  .site-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .site-header nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .site-header nav a {
+    margin: 0;
+  }
+
+  .join-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 45px 6%;
+    min-height: auto;
+  }
+
+  .hero h1 {
+    font-size: 42px;
+  }
+
+  .hero p {
+    font-size: 16px;
+  }
+
+  .hero-visual {
+    display: none;
+  }
+
+  .stats {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .action-zone {
+    margin: 0 5%;
+    grid-template-columns: 1fr;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .events-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-card {
+    min-height: auto;
+  }
+
+  .event-card img {
+    height: 230px;
+  }
+
+  .modal-box {
+    display: block;
+    width: 94%;
+  }
+
+  .modal-img {
+    height: 260px;
+    min-height: auto;
+  }
+
+  .modal-content {
+    padding: 26px;
+  }
+
+  .modal-content h2 {
+    font-size: 28px;
+  }
+
+  .modal-content p {
+    font-size: 16px;
+  }
+}

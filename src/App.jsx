@@ -271,15 +271,15 @@ function App() {
 
           <div className="stats">
             <div>
-              <strong>500+</strong>
+              <strong>5000+</strong>
               <span>Jeunes impactés</span>
             </div>
             <div>
-              <strong>20+</strong>
+              <strong>200+</strong>
               <span>Projets réalisés</span>
             </div>
             <div>
-              <strong>10+</strong>
+              <strong>100+</strong>
               <span>Partenaires</span>
             </div>
           </div>
@@ -354,11 +354,11 @@ function App() {
                 )}
 
                 <div className="event-content">
-                  <h3>{event.title}</h3>
-                  <p>{shortText(event.description, 90)}</p>
-                  <strong>{event.date}</strong>
-                  <span className="read-more">Lire plus →</span>
-                </div>
+  <span className="event-date">{event.date}</span>
+  <h3>{event.title}</h3>
+  <p>{shortText(event.description, 120)}</p>
+  <span className="read-more">Voir les détails →</span>
+</div>
               </div>
             ))
           )}
