@@ -714,3 +714,161 @@ body {
     font-size: 16px;
   }
 }
+/* EVENTS DESIGN ++ */
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 34px;
+}
+
+.event-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 28px;
+  overflow: hidden;
+  min-height: 520px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.12);
+  transition: 0.3s ease;
+}
+
+.event-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 35px 100px rgba(0, 0, 0, 0.18);
+}
+
+.event-card img {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+}
+
+.event-content {
+  padding: 28px;
+}
+
+.event-date {
+  display: inline-block;
+  background: #7ac142;
+  color: #111;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 900;
+  margin-bottom: 16px;
+}
+
+.event-content h3 {
+  font-size: 26px;
+  line-height: 1.2;
+  margin-bottom: 14px;
+  color: #111;
+}
+
+.event-content p {
+  color: #555;
+  font-size: 16px;
+  line-height: 1.8;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.read-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #7ac142;
+  font-weight: 900;
+  font-size: 16px;
+}
+
+/* MODAL DESIGN ++ */
+
+.modal-box {
+  width: min(1100px, 94%);
+  border-radius: 30px;
+  overflow: hidden;
+}
+
+.modal-img {
+  height: 440px;
+  object-fit: cover;
+}
+
+.modal-content {
+  padding: 42px;
+}
+
+.modal-date {
+  background: #7ac142;
+  color: #111;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.modal-content h2 {
+  margin-top: 22px;
+  font-size: 42px;
+  line-height: 1.15;
+}
+
+.modal-content p {
+  margin-top: 20px;
+  color: #444;
+  font-size: 18px;
+  line-height: 1.9;
+}
+
+/* MOBILE EVENTS ++ */
+
+@media (max-width: 768px) {
+  .section {
+    padding: 50px 5%;
+  }
+
+  .events-grid {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+
+  .event-card {
+    min-height: auto;
+    border-radius: 24px;
+  }
+
+  .event-card img {
+    height: 240px;
+  }
+
+  .event-content {
+    padding: 22px;
+  }
+
+  .event-content h3 {
+    font-size: 23px;
+  }
+
+  .event-content p {
+    font-size: 15px;
+  }
+
+  .modal-img {
+    height: 260px;
+  }
+
+  .modal-content {
+    padding: 24px;
+  }
+
+  .modal-content h2 {
+    font-size: 30px;
+  }
+
+  .modal-content p {
+    font-size: 16px;
+  }
+}
