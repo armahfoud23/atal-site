@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { supabase } from "./supabaseClient"
 
 function App() {
-  const isAdminPage =
-    window.location.pathname.includes("admin") ||
-    window.location.search.includes("admin=1")
+  const isAdminPage = window.location.search.includes("admin=1")
 
   const categories = [
     "Culture",
