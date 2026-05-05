@@ -52,26 +52,13 @@ function App() {
     }
   }, [])
 
-  useEffect(() => {
-    const elements = document.querySelectorAll(".reveal")
+  function showMessage(text) {
+    setMessage(text)
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible")
-          }
-        })
-      },
-      { threshold: 0.15 }
-    )
-
-    elements.forEach((element) => observer.observe(element))
-
-    return () => {
-      elements.forEach((element) => observer.unobserve(element))
-    }
-  }, [filteredEvents.length])
+    setTimeout(() => {
+      setMessage("")
+    }, 3500)
+  }
 
   async function fetchEvents() {
     setLoading(true)
@@ -89,14 +76,6 @@ function App() {
 
     setEvents(data || [])
     setLoading(false)
-  }
-
-  function showMessage(text) {
-    setMessage(text)
-
-    setTimeout(() => {
-      setMessage("")
-    }, 3500)
   }
 
   function shortText(text, max = 120) {
@@ -144,6 +123,27 @@ function App() {
 
     return list
   }, [filter, categoryFilter, events, pastEvents, upcomingEvents])
+
+  useEffect(() => {
+    const elements = document.querySelectorAll(".reveal")
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible")
+          }
+        })
+      },
+      { threshold: 0.15 }
+    )
+
+    elements.forEach((element) => observer.observe(element))
+
+    return () => {
+      elements.forEach((element) => observer.unobserve(element))
+    }
+  }, [filteredEvents.length])
 
   async function signIn(e) {
     e.preventDefault()
@@ -210,9 +210,7 @@ function App() {
       throw new Error(uploadError.message)
     }
 
-    const { data } = supabase.storage
-      .from("event-images")
-      .getPublicUrl(fileName)
+    const { data } = supabase.storage.from("event-images").getPublicUrl(fileName)
 
     return data.publicUrl
   }
@@ -548,7 +546,7 @@ function App() {
             Rejoignez-nous
           </a>
 
-          <a className="admin-link" href="/admin" title="Administration">
+          <a className="admin-link" href="/?admin=1" title="Administration">
             Admin
           </a>
         </div>
