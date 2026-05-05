@@ -31,7 +31,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
-  const [filter, setFilter] = useState("all")
+  const [filter, setFilter] = useState("upcoming")
   const [categoryFilter, setCategoryFilter] = useState("all")
 
   useEffect(() => {
