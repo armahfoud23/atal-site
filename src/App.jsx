@@ -764,13 +764,13 @@ function App() {
 
               {hasValidRegistration(selectedEvent) && (
                 <a
-                  href={selectedEvent.registration_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="register-btn modal-register-btn"
-                >
-                  S’inscrire à cet événement
-                </a>
+  href={selectedEvent.registration_link}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="register-btn"
+>
+  S’inscrire à cet événement
+</a>
               )}
             </div>
           </div>
