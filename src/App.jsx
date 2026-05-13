@@ -25,6 +25,8 @@ function App() {
   const [description, setDescription] = useState("")
   const [date, setDate] = useState("")
   const [category, setCategory] = useState("Culture")
+  const [hasRegistration, setHasRegistration] = useState(false)
+  const [registrationLink, setRegistrationLink] = useState("")
   const [imageFile, setImageFile] = useState(null)
   const [editingEvent, setEditingEvent] = useState(null)
 
@@ -103,6 +105,10 @@ function App() {
     return eventDay < today
   }
 
+  function hasValidRegistration(event) {
+    return Boolean(event.has_registration && event.registration_link)
+  }
+
   const upcomingEvents = useMemo(() => {
     return events.filter((event) => !isPastEvent(event.date))
   }, [events])
@@ -171,6 +177,8 @@ function App() {
     setDescription("")
     setDate("")
     setCategory("Culture")
+    setHasRegistration(false)
+    setRegistrationLink("")
     setImageFile(null)
     setEditingEvent(null)
 
@@ -184,6 +192,8 @@ function App() {
     setDescription(event.description || "")
     setDate(event.date || "")
     setCategory(event.category || "Culture")
+    setHasRegistration(event.has_registration || false)
+    setRegistrationLink(event.registration_link || "")
     setImageFile(null)
 
     window.scrollTo({
@@ -223,6 +233,11 @@ function App() {
       return
     }
 
+    if (hasRegistration && !registrationLink) {
+      showMessage("Merci d’ajouter le lien d’inscription")
+      return
+    }
+
     setSaving(true)
 
     try {
@@ -234,6 +249,8 @@ function App() {
           description,
           date,
           category,
+          has_registration: hasRegistration,
+          registration_link: hasRegistration ? registrationLink : null,
         }
 
         if (uploadedImageUrl) {
@@ -260,6 +277,8 @@ function App() {
             date,
             category,
             image_url: uploadedImageUrl,
+            has_registration: hasRegistration,
+            registration_link: hasRegistration ? registrationLink : null,
           },
         ])
 
@@ -381,21 +400,48 @@ function App() {
               <p>{shortText(event.description, 130)}</p>
 
               {admin ? (
-                <div className="admin-actions">
-                  <button type="button" onClick={() => startEdit(event)}>
-                    Modifier
-                  </button>
+                <>
+                  {hasValidRegistration(event) && (
+                    <a
+                      href={event.registration_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="register-btn admin-register-link"
+                    >
+                      Voir le formulaire
+                    </a>
+                  )}
 
-                  <button
-                    type="button"
-                    className="delete-btn"
-                    onClick={() => deleteEvent(event.id)}
-                  >
-                    Supprimer
-                  </button>
-                </div>
+                  <div className="admin-actions">
+                    <button type="button" onClick={() => startEdit(event)}>
+                      Modifier
+                    </button>
+
+                    <button
+                      type="button"
+                      className="delete-btn"
+                      onClick={() => deleteEvent(event.id)}
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </>
               ) : (
-                <span className="read-more">Voir les détails →</span>
+                <>
+                  {hasValidRegistration(event) && (
+                    <a
+                      href={event.registration_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="register-btn"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      S’inscrire
+                    </a>
+                  )}
+
+                  <span className="read-more">Voir les détails →</span>
+                </>
               )}
             </div>
           </div>
@@ -490,6 +536,31 @@ function App() {
                 </option>
               ))}
             </select>
+
+            <div className="registration-switch-box">
+              <div>
+                <h3>Lien d’inscription</h3>
+                <p>Active si cet événement possède un formulaire Google.</p>
+              </div>
+
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={hasRegistration}
+                  onChange={(e) => setHasRegistration(e.target.checked)}
+                />
+                <span className="slider"></span>
+              </label>
+            </div>
+
+            {hasRegistration && (
+              <input
+                type="url"
+                placeholder="Lien Google Form"
+                value={registrationLink}
+                onChange={(e) => setRegistrationLink(e.target.value)}
+              />
+            )}
 
             <input
               type="file"
@@ -690,6 +761,17 @@ function App() {
               </span>
               <h2>{selectedEvent.title}</h2>
               <p>{selectedEvent.description}</p>
+
+              {hasValidRegistration(selectedEvent) && (
+                <a
+                  href={selectedEvent.registration_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="register-btn modal-register-btn"
+                >
+                  S’inscrire à cet événement
+                </a>
+              )}
             </div>
           </div>
         </div>
