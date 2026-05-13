@@ -62,6 +62,21 @@ function App() {
     }, 3500)
   }
 
+  function cleanUrl(url) {
+    if (!url) return "#"
+
+    const trimmedUrl = url.trim()
+
+    if (
+      trimmedUrl.startsWith("http://") ||
+      trimmedUrl.startsWith("https://")
+    ) {
+      return trimmedUrl
+    }
+
+    return `https://${trimmedUrl}`
+  }
+
   async function fetchEvents() {
     setLoading(true)
 
@@ -106,7 +121,7 @@ function App() {
   }
 
   function hasValidRegistration(event) {
-    return Boolean(event.has_registration && event.registration_link)
+    return Boolean(event?.has_registration && event?.registration_link)
   }
 
   const upcomingEvents = useMemo(() => {
@@ -250,7 +265,7 @@ function App() {
           date,
           category,
           has_registration: hasRegistration,
-          registration_link: hasRegistration ? registrationLink : null,
+          registration_link: hasRegistration ? cleanUrl(registrationLink) : null,
         }
 
         if (uploadedImageUrl) {
@@ -278,7 +293,7 @@ function App() {
             category,
             image_url: uploadedImageUrl,
             has_registration: hasRegistration,
-            registration_link: hasRegistration ? registrationLink : null,
+            registration_link: hasRegistration ? cleanUrl(registrationLink) : null,
           },
         ])
 
@@ -403,10 +418,11 @@ function App() {
                 <>
                   {hasValidRegistration(event) && (
                     <a
-                      href={event.registration_link}
+                      href={cleanUrl(event.registration_link)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="register-btn admin-register-link"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       Voir le formulaire
                     </a>
@@ -430,13 +446,13 @@ function App() {
                 <>
                   {hasValidRegistration(event) && (
                     <a
-                      href={event.registration_link}
+                      href={cleanUrl(event.registration_link)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="register-btn"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      S’inscrire
+                      S'inscrire
                     </a>
                   )}
 
@@ -764,12 +780,13 @@ function App() {
 
               {hasValidRegistration(selectedEvent) && (
                 <a
-                  href={selectedEvent.registration_link}
+                  href={cleanUrl(selectedEvent.registration_link)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="register-btn modal-register-btn"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  S’inscrire à cet événement
+                  S'inscrire
                 </a>
               )}
             </div>
