@@ -134,6 +134,11 @@ const contentByLanguage = {
       register: "S'inscrire",
       adminRegister: "Voir le formulaire",
       readMore: "Voir les détails →",
+      memoriesEyebrow: "Souvenirs ATAL",
+      memoriesTitle: "Photos des événements passés",
+      memoriesText: "Une barre vivante pour revoir les moments déjà réalisés avec les jeunes et les partenaires.",
+      memoriesEmpty: "Les photos des anciens événements apparaîtront ici dès qu’elles sont ajoutées depuis l’admin.",
+      memoriesAria: "Ouvrir les détails de l’événement",
       categories: {
         Culture: "Culture",
         Sport: "Sport",
@@ -267,6 +272,11 @@ const contentByLanguage = {
       register: "Register",
       adminRegister: "View form",
       readMore: "View details →",
+      memoriesEyebrow: "ATAL memories",
+      memoriesTitle: "Photos from past events",
+      memoriesText: "A lively strip to revisit moments already created with young people and partners.",
+      memoriesEmpty: "Photos from past events will appear here once they are added from the admin area.",
+      memoriesAria: "Open event details",
       categories: {
         Culture: "Culture",
         Sport: "Sport",
@@ -545,6 +555,10 @@ function App() {
     return events.filter((event) => isPastEvent(event.date)).reverse()
   }, [events])
 
+  const pastEventsWithPhotos = useMemo(() => {
+    return pastEvents.filter((event) => event.image_url).slice(0, 12)
+  }, [pastEvents])
+
   const filteredEvents = useMemo(() => {
     let list = events
 
@@ -577,7 +591,7 @@ function App() {
     return () => {
       elements.forEach((element) => observer.unobserve(element))
     }
-  }, [filteredEvents.length])
+  }, [filteredEvents.length, pastEventsWithPhotos.length])
 
   useEffect(() => {
     const impactSection = document.querySelector(".impact-section")
@@ -905,6 +919,51 @@ function App() {
             </div>
           )
         })}
+      </div>
+    )
+  }
+
+  function renderPastMemoriesBar() {
+    if (loading) return null
+
+    return (
+      <div className="memories-panel reveal">
+        <div className="memories-header">
+          <div>
+            <p className="eyebrow">{content.events.memoriesEyebrow}</p>
+            <h3>{content.events.memoriesTitle}</h3>
+          </div>
+          <p>{content.events.memoriesText}</p>
+        </div>
+
+        {pastEventsWithPhotos.length > 0 ? (
+          <div className="memories-strip" aria-label={content.events.memoriesTitle}>
+            {pastEventsWithPhotos.map((event, index) => (
+              <button
+                type="button"
+                className="memory-card"
+                style={{ animationDelay: `${index * 80}ms` }}
+                key={event.id}
+                aria-label={`${content.events.memoriesAria} : ${event.title}`}
+                onClick={() => setSelectedEvent(event)}
+              >
+                <img src={event.image_url} alt={event.title || "ATAL"} loading="lazy" />
+                <span className="memory-card-content">
+                  <span className="memory-meta">
+                    <span>{formatDate(event.date)}</span>
+                    <span>{displayCategory(event.category)}</span>
+                  </span>
+                  <span className="memory-title">{event.title}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="memories-empty">
+            <strong>ATAL</strong>
+            <span>{content.events.memoriesEmpty}</span>
+          </div>
+        )}
       </div>
     )
   }
@@ -1365,6 +1424,8 @@ function App() {
         </div>
 
         {renderEventsList(filteredEvents)}
+
+        {renderPastMemoriesBar()}
       </section>
 
       <section className="contact reveal" id="contact">
