@@ -2133,6 +2133,16 @@ button {
   font-weight: 800;
 }
 
+.gallery-page-main {
+  min-height: calc(100vh - 88px);
+  background:
+    linear-gradient(180deg, #f8fff2 0, #ffffff 52%, #eefbe8 100%);
+}
+
+.gallery-page-main .gallery-section {
+  min-height: calc(100vh - 88px);
+}
+
 @keyframes memoriesBeam {
   0%,
   100% {

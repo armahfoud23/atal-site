@@ -367,6 +367,8 @@ function ImpactNumber({ target, suffix, active, locale }) {
 
 function App() {
   const isAdminPage = window.location.search.includes("admin=1")
+  const currentPath = window.location.pathname.replace(/\/$/, "") || "/"
+  const isGalleryPage = currentPath === "/galerie"
   const memoriesStripRef = useRef(null)
 
   const [session, setSession] = useState(null)
@@ -575,6 +577,10 @@ function App() {
     return content.events.categories[value] || value
   }
 
+  function homeSectionHref(sectionId) {
+    return isGalleryPage ? `/#${sectionId}` : `#${sectionId}`
+  }
+
   const upcomingEvents = useMemo(() => {
     return events.filter((event) => !isPastEvent(event.date))
   }, [events])
@@ -633,7 +639,14 @@ function App() {
     return () => {
       elements.forEach((element) => observer.unobserve(element))
     }
-  }, [filteredEvents.length, memoryPreviewEvents.length, galleryEvents.length, featuredEvent])
+  }, [
+    filteredEvents.length,
+    memoryPreviewEvents.length,
+    galleryEvents.length,
+    featuredEvent,
+    loading,
+    isGalleryPage,
+  ])
 
   useEffect(() => {
     const strip = memoriesStripRef.current
@@ -1094,7 +1107,7 @@ function App() {
           <div className="memories-header-copy">
             <p>{content.events.memoriesText}</p>
             {pastPhotoEvents.length > 0 && (
-              <a href="#galerie" className="memories-more-link">
+              <a href="/galerie" className="memories-more-link">
                 {content.events.memoriesMore}
               </a>
             )}
@@ -1211,11 +1224,108 @@ function App() {
     )
   }
 
+  function renderSiteHeader() {
+    return (
+      <header className="site-header">
+        <div className="brand">
+          <img src="/logo.png" alt="ATAL" />
+          <div>
+            <strong>ASSOCIATION</strong>
+            <span>TRAIN OF FUTURE LARACHE</span>
+          </div>
+        </div>
+
+        <nav>
+          <a href={homeSectionHref("accueil")}>{content.nav.home}</a>
+          <a href={homeSectionHref("activites")}>{content.nav.activities}</a>
+          <a href={homeSectionHref("association")}>{content.nav.association}</a>
+          <a href={homeSectionHref("impact")}>{content.nav.impact}</a>
+          <a href={homeSectionHref("evenements")}>{content.nav.events}</a>
+          <a href="/galerie">{content.nav.gallery}</a>
+          <a href={homeSectionHref("contact")}>{content.nav.contact}</a>
+        </nav>
+
+        <div className="header-actions">
+          <button
+            type="button"
+            className="language-toggle"
+            aria-label={content.languageLabel}
+            onClick={toggleLanguage}
+          >
+            {content.languageButton}
+          </button>
+
+          <a className="join-btn" href={homeSectionHref("association")}>
+            {content.join}
+          </a>
+
+          <a className="admin-link" href="/?admin=1" title="Administration">
+            {content.admin}
+          </a>
+        </div>
+      </header>
+    )
+  }
+
   const selectedEventDescriptionDirection = selectedEvent
     ? getTextDirection(selectedEvent.description)
     : "ltr"
   const isSelectedEventDescriptionArabic =
     selectedEventDescriptionDirection === "rtl"
+
+  function renderEventModal() {
+    if (!selectedEvent) return null
+
+    return (
+      <div className="modal-overlay" onClick={() => setSelectedEvent(null)}>
+        <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+          <button
+            className="modal-close"
+            onClick={() => setSelectedEvent(null)}
+          >
+            ×
+          </button>
+
+          {selectedEvent.image_url ? (
+            <img
+              className="modal-img"
+              src={selectedEvent.image_url}
+              alt={selectedEvent.title}
+            />
+          ) : (
+            <div className="modal-img modal-placeholder">ATAL</div>
+          )}
+
+          <div className="modal-content">
+            <span className="modal-date">{formatDate(selectedEvent.date)}</span>
+            <span className="modal-category">
+              {displayCategory(selectedEvent.category)}
+            </span>
+            <h2>{selectedEvent.title}</h2>
+            <p
+              className={isSelectedEventDescriptionArabic ? "rtl-text" : ""}
+              dir={selectedEventDescriptionDirection}
+              lang={isSelectedEventDescriptionArabic ? "ar" : language}
+            >
+              {selectedEvent.description}
+            </p>
+
+            {hasValidRegistration(selectedEvent) && (
+              <a
+                href={cleanUrl(selectedEvent.registration_link)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="register-btn modal-register-btn"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {content.events.register}
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (isAdminPage) {
     if (!session) {
@@ -1364,46 +1474,23 @@ function App() {
     )
   }
 
+  if (isGalleryPage) {
+    return (
+      <div lang={language}>
+        {renderSiteHeader()}
+
+        <main className="gallery-page-main">
+          {renderGallerySection()}
+        </main>
+
+        {renderEventModal()}
+      </div>
+    )
+  }
+
   return (
     <div lang={language}>
-      <header className="site-header">
-        <div className="brand">
-          <img src="/logo.png" alt="ATAL" />
-          <div>
-            <strong>ASSOCIATION</strong>
-            <span>TRAIN OF FUTURE LARACHE</span>
-          </div>
-        </div>
-
-        <nav>
-          <a href="#accueil">{content.nav.home}</a>
-          <a href="#activites">{content.nav.activities}</a>
-          <a href="#association">{content.nav.association}</a>
-          <a href="#impact">{content.nav.impact}</a>
-          <a href="#evenements">{content.nav.events}</a>
-          <a href="#galerie">{content.nav.gallery}</a>
-          <a href="#contact">{content.nav.contact}</a>
-        </nav>
-
-        <div className="header-actions">
-          <button
-            type="button"
-            className="language-toggle"
-            aria-label={content.languageLabel}
-            onClick={toggleLanguage}
-          >
-            {content.languageButton}
-          </button>
-
-          <a className="join-btn" href="#association">
-            {content.join}
-          </a>
-
-          <a className="admin-link" href="/?admin=1" title="Administration">
-            {content.admin}
-          </a>
-        </div>
-      </header>
+      {renderSiteHeader()}
 
       <section className="hero reveal" id="accueil">
         <div className="hero-content">
@@ -1674,8 +1761,6 @@ function App() {
         {renderPastMemoriesBar()}
       </section>
 
-      {renderGallerySection()}
-
       <section className="contact reveal" id="contact">
         <p className="eyebrow">{content.contact.eyebrow}</p>
         <h2>{content.contact.title}</h2>
@@ -1684,55 +1769,7 @@ function App() {
         <p>{content.contact.socials}</p>
       </section>
 
-      {selectedEvent && (
-        <div className="modal-overlay" onClick={() => setSelectedEvent(null)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="modal-close"
-              onClick={() => setSelectedEvent(null)}
-            >
-              ×
-            </button>
-
-            {selectedEvent.image_url ? (
-              <img
-                className="modal-img"
-                src={selectedEvent.image_url}
-                alt={selectedEvent.title}
-              />
-            ) : (
-              <div className="modal-img modal-placeholder">ATAL</div>
-            )}
-
-            <div className="modal-content">
-              <span className="modal-date">{formatDate(selectedEvent.date)}</span>
-              <span className="modal-category">
-                {displayCategory(selectedEvent.category)}
-              </span>
-              <h2>{selectedEvent.title}</h2>
-              <p
-                className={isSelectedEventDescriptionArabic ? "rtl-text" : ""}
-                dir={selectedEventDescriptionDirection}
-                lang={isSelectedEventDescriptionArabic ? "ar" : "fr"}
-              >
-                {selectedEvent.description}
-              </p>
-
-              {hasValidRegistration(selectedEvent) && (
-                <a
-                  href={cleanUrl(selectedEvent.registration_link)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="register-btn modal-register-btn"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {content.events.register}
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {renderEventModal()}
     </div>
   )
 }
