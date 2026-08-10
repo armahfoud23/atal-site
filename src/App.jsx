@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { supabase } from "./supabaseClient"
 
 const categories = [
@@ -31,6 +31,7 @@ const contentByLanguage = {
       association: "Association",
       impact: "Impact",
       events: "Événements",
+      gallery: "Galerie",
       contact: "Contact",
     },
     hero: {
@@ -134,11 +135,23 @@ const contentByLanguage = {
       register: "S'inscrire",
       adminRegister: "Voir le formulaire",
       readMore: "Voir les détails →",
+      featuredPastEyebrow: "Dernier temps fort",
+      featuredPastLabel: "Souvenir en avant",
+      featuredPastText: "ATAL met automatiquement en avant le dernier moment réalisé avec une photo et une histoire à revoir.",
+      featuredPastDetails: "Voir le souvenir",
       memoriesEyebrow: "Souvenirs ATAL",
       memoriesTitle: "Photos des événements passés",
       memoriesText: "Une barre vivante pour revoir les moments déjà réalisés avec les jeunes et les partenaires.",
       memoriesEmpty: "Les photos des anciens événements apparaîtront ici dès qu’elles sont ajoutées depuis l’admin.",
       memoriesAria: "Ouvrir les détails de l’événement",
+      memoriesMore: "Voir tous les souvenirs",
+      galleryEyebrow: "Galerie ATAL",
+      galleryTitleStart: "Tous les",
+      galleryTitleHighlight: "souvenirs",
+      galleryText: "Explorez les photos des événements déjà passés et retrouvez les actions par catégorie.",
+      galleryAll: "Toutes les photos",
+      galleryEmpty: "Aucune photo trouvée dans cette catégorie.",
+      galleryCount: "souvenirs trouvés",
       categories: {
         Culture: "Culture",
         Sport: "Sport",
@@ -169,6 +182,7 @@ const contentByLanguage = {
       association: "Association",
       impact: "Impact",
       events: "Events",
+      gallery: "Gallery",
       contact: "Contact",
     },
     hero: {
@@ -272,11 +286,23 @@ const contentByLanguage = {
       register: "Register",
       adminRegister: "View form",
       readMore: "View details →",
+      featuredPastEyebrow: "Latest highlight",
+      featuredPastLabel: "Featured memory",
+      featuredPastText: "ATAL automatically highlights the latest completed moment with a photo and a story to revisit.",
+      featuredPastDetails: "View memory",
       memoriesEyebrow: "ATAL memories",
       memoriesTitle: "Photos from past events",
       memoriesText: "A lively strip to revisit moments already created with young people and partners.",
       memoriesEmpty: "Photos from past events will appear here once they are added from the admin area.",
       memoriesAria: "Open event details",
+      memoriesMore: "View all memories",
+      galleryEyebrow: "ATAL Gallery",
+      galleryTitleStart: "All",
+      galleryTitleHighlight: "memories",
+      galleryText: "Explore photos from past events and browse actions by category.",
+      galleryAll: "All photos",
+      galleryEmpty: "No photos found in this category.",
+      galleryCount: "memories found",
       categories: {
         Culture: "Culture",
         Sport: "Sport",
@@ -341,6 +367,7 @@ function ImpactNumber({ target, suffix, active, locale }) {
 
 function App() {
   const isAdminPage = window.location.search.includes("admin=1")
+  const memoriesStripRef = useRef(null)
 
   const [session, setSession] = useState(null)
   const [email, setEmail] = useState("")
@@ -363,6 +390,7 @@ function App() {
   const [message, setMessage] = useState("")
   const [filter, setFilter] = useState("upcoming")
   const [categoryFilter, setCategoryFilter] = useState("all")
+  const [galleryFilter, setGalleryFilter] = useState("all")
   const [associationRequest, setAssociationRequest] = useState(
     initialAssociationRequest
   )
@@ -555,9 +583,23 @@ function App() {
     return events.filter((event) => isPastEvent(event.date)).reverse()
   }, [events])
 
-  const pastEventsWithPhotos = useMemo(() => {
-    return pastEvents.filter((event) => event.image_url).slice(0, 12)
+  const featuredEvent = useMemo(() => {
+    return pastEvents[0] || null
   }, [pastEvents])
+
+  const pastPhotoEvents = useMemo(() => {
+    return pastEvents.filter((event) => event.image_url)
+  }, [pastEvents])
+
+  const memoryPreviewEvents = useMemo(() => {
+    return pastPhotoEvents.slice(0, 12)
+  }, [pastPhotoEvents])
+
+  const galleryEvents = useMemo(() => {
+    if (galleryFilter === "all") return pastPhotoEvents
+
+    return pastPhotoEvents.filter((event) => event.category === galleryFilter)
+  }, [galleryFilter, pastPhotoEvents])
 
   const filteredEvents = useMemo(() => {
     let list = events
@@ -591,7 +633,61 @@ function App() {
     return () => {
       elements.forEach((element) => observer.unobserve(element))
     }
-  }, [filteredEvents.length, pastEventsWithPhotos.length])
+  }, [filteredEvents.length, memoryPreviewEvents.length, galleryEvents.length, featuredEvent])
+
+  useEffect(() => {
+    const strip = memoriesStripRef.current
+    if (!strip || memoryPreviewEvents.length < 2) return undefined
+
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches
+
+    if (prefersReducedMotion) return undefined
+
+    let frameId = 0
+    let lastTime = performance.now()
+    let isPaused = false
+
+    function pause() {
+      isPaused = true
+    }
+
+    function resume() {
+      isPaused = false
+      lastTime = performance.now()
+    }
+
+    function animate(now) {
+      const delta = now - lastTime
+      lastTime = now
+
+      if (!isPaused) {
+        strip.scrollLeft += delta * 0.045
+
+        if (strip.scrollLeft >= strip.scrollWidth - strip.clientWidth - 2) {
+          strip.scrollTo({ left: 0, behavior: "auto" })
+        }
+      }
+
+      frameId = requestAnimationFrame(animate)
+    }
+
+    strip.addEventListener("mouseenter", pause)
+    strip.addEventListener("mouseleave", resume)
+    strip.addEventListener("focusin", pause)
+    strip.addEventListener("focusout", resume)
+
+    frameId = requestAnimationFrame(animate)
+
+    return () => {
+      cancelAnimationFrame(frameId)
+      strip.removeEventListener("mouseenter", pause)
+      strip.removeEventListener("mouseleave", resume)
+      strip.removeEventListener("focusin", pause)
+      strip.removeEventListener("focusout", resume)
+    }
+  }, [memoryPreviewEvents.length])
 
   useEffect(() => {
     const impactSection = document.querySelector(".impact-section")
@@ -923,6 +1019,68 @@ function App() {
     )
   }
 
+  function renderFeaturedEvent() {
+    if (loading || !featuredEvent) return null
+
+    const featuredCopy = {
+      details: content.events.featuredPastDetails,
+      eyebrow: content.events.featuredPastEyebrow,
+      label: content.events.featuredPastLabel,
+      text: content.events.featuredPastText,
+    }
+    const descriptionDirection = getTextDirection(featuredEvent.description)
+    const isArabicDescription = descriptionDirection === "rtl"
+
+    return (
+      <article className="featured-event past-featured-event reveal">
+        <button
+          type="button"
+          className="featured-event-media"
+          aria-label={`${featuredCopy.details} : ${featuredEvent.title}`}
+          onClick={() => setSelectedEvent(featuredEvent)}
+        >
+          {featuredEvent.image_url ? (
+            <img
+              src={featuredEvent.image_url}
+              alt={featuredEvent.title || "ATAL"}
+              loading="lazy"
+            />
+          ) : (
+            <span className="featured-event-placeholder">ATAL</span>
+          )}
+          <span className="featured-event-badge">
+            {featuredCopy.label}
+          </span>
+        </button>
+
+        <div className="featured-event-content">
+          <p className="eyebrow">{featuredCopy.eyebrow}</p>
+          <div className="featured-event-meta">
+            <span>{formatDate(featuredEvent.date)}</span>
+            <span>{displayCategory(featuredEvent.category)}</span>
+          </div>
+
+          <h3>{featuredEvent.title}</h3>
+          <p
+            className={isArabicDescription ? "rtl-text" : ""}
+            dir={descriptionDirection}
+            lang={isArabicDescription ? "ar" : language}
+          >
+            {shortText(featuredEvent.description, 210)}
+          </p>
+
+          <div className="featured-event-actions">
+            <button type="button" onClick={() => setSelectedEvent(featuredEvent)}>
+              {featuredCopy.details}
+            </button>
+          </div>
+
+          <span className="featured-event-note">{featuredCopy.text}</span>
+        </div>
+      </article>
+    )
+  }
+
   function renderPastMemoriesBar() {
     if (loading) return null
 
@@ -933,12 +1091,23 @@ function App() {
             <p className="eyebrow">{content.events.memoriesEyebrow}</p>
             <h3>{content.events.memoriesTitle}</h3>
           </div>
-          <p>{content.events.memoriesText}</p>
+          <div className="memories-header-copy">
+            <p>{content.events.memoriesText}</p>
+            {pastPhotoEvents.length > 0 && (
+              <a href="#galerie" className="memories-more-link">
+                {content.events.memoriesMore}
+              </a>
+            )}
+          </div>
         </div>
 
-        {pastEventsWithPhotos.length > 0 ? (
-          <div className="memories-strip" aria-label={content.events.memoriesTitle}>
-            {pastEventsWithPhotos.map((event, index) => (
+        {memoryPreviewEvents.length > 0 ? (
+          <div
+            className="memories-strip"
+            aria-label={content.events.memoriesTitle}
+            ref={memoriesStripRef}
+          >
+            {memoryPreviewEvents.map((event, index) => (
               <button
                 type="button"
                 className="memory-card"
@@ -965,6 +1134,80 @@ function App() {
           </div>
         )}
       </div>
+    )
+  }
+
+  function renderGallerySection() {
+    if (loading) return null
+
+    return (
+      <section className="gallery-section reveal" id="galerie">
+        <div className="gallery-header">
+          <div>
+            <p className="eyebrow">{content.events.galleryEyebrow}</p>
+            <h2>
+              {content.events.galleryTitleStart}{" "}
+              <span>{content.events.galleryTitleHighlight}</span>
+            </h2>
+            <p>{content.events.galleryText}</p>
+          </div>
+
+          <div className="gallery-counter">
+            <strong>{galleryEvents.length}</strong>
+            <span>{content.events.galleryCount}</span>
+          </div>
+        </div>
+
+        <div className="gallery-filters" aria-label={content.events.allCategories}>
+          <button
+            type="button"
+            className={galleryFilter === "all" ? "active" : ""}
+            onClick={() => setGalleryFilter("all")}
+          >
+            {content.events.galleryAll}
+          </button>
+
+          {categories.map((item) => (
+            <button
+              type="button"
+              className={galleryFilter === item ? "active" : ""}
+              key={item}
+              onClick={() => setGalleryFilter(item)}
+            >
+              {displayCategory(item)}
+            </button>
+          ))}
+        </div>
+
+        {galleryEvents.length > 0 ? (
+          <div className="gallery-grid">
+            {galleryEvents.map((event, index) => (
+              <button
+                type="button"
+                className="gallery-card"
+                style={{ animationDelay: `${index * 55}ms` }}
+                key={event.id}
+                aria-label={`${content.events.memoriesAria} : ${event.title}`}
+                onClick={() => setSelectedEvent(event)}
+              >
+                <img src={event.image_url} alt={event.title || "ATAL"} loading="lazy" />
+                <span className="gallery-card-content">
+                  <span className="gallery-card-meta">
+                    <span>{formatDate(event.date)}</span>
+                    <span>{displayCategory(event.category)}</span>
+                  </span>
+                  <span className="gallery-card-title">{event.title}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="gallery-empty">
+            <strong>ATAL</strong>
+            <span>{content.events.galleryEmpty}</span>
+          </div>
+        )}
+      </section>
     )
   }
 
@@ -1138,6 +1381,7 @@ function App() {
           <a href="#association">{content.nav.association}</a>
           <a href="#impact">{content.nav.impact}</a>
           <a href="#evenements">{content.nav.events}</a>
+          <a href="#galerie">{content.nav.gallery}</a>
           <a href="#contact">{content.nav.contact}</a>
         </nav>
 
@@ -1423,10 +1667,14 @@ function App() {
           {renderFilterBox()}
         </div>
 
+        {renderFeaturedEvent()}
+
         {renderEventsList(filteredEvents)}
 
         {renderPastMemoriesBar()}
       </section>
+
+      {renderGallerySection()}
 
       <section className="contact reveal" id="contact">
         <p className="eyebrow">{content.contact.eyebrow}</p>
