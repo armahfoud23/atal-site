@@ -1020,7 +1020,7 @@ function App() {
   }
 
   function renderFeaturedEvent() {
-    if (loading || !featuredEvent) return null
+    if (loading || filter !== "past" || !featuredEvent) return null
 
     const featuredCopy = {
       details: content.events.featuredPastDetails,
